@@ -31,6 +31,8 @@ interface DarkModeStore {
   lightClass: string;
   /** Apply mode to iframe */
   stylePreview: boolean;
+  /** Update color-scheme for the preview iframe */
+  updatePreviewColorScheme: boolean;
 }
 
 const STORAGE_KEY = 'sb-addon-themes-3';
@@ -43,6 +45,7 @@ const defaultParams: Required<Omit<DarkModeStore, 'current'>> = {
   light: themes.light,
   lightClass: 'light',
   stylePreview: false,
+  updatePreviewColorScheme: false,
 };
 
 /** Persist the dark mode settings in localStorage */
@@ -70,7 +73,20 @@ const updatePreview = (store: DarkModeStore) => {
   }
 
   const iframeDocument = iframe.contentDocument || iframe.contentWindow?.document;
-  const target = iframeDocument?.querySelector(store.classTarget) as HTMLElement;
+  if (!iframeDocument) {
+    return;
+  }
+  if (store.updatePreviewColorScheme) {
+    let colorSchemeMetaElement: HTMLMetaElement | null = iframeDocument.head.querySelector(':scope > meta[name="color-scheme"]');
+    if (!colorSchemeMetaElement) {
+      colorSchemeMetaElement = iframeDocument.createElement('meta');
+      colorSchemeMetaElement.name = 'color-scheme';
+      iframeDocument.head.appendChild(colorSchemeMetaElement);
+    }
+    colorSchemeMetaElement.content = store.current;
+  }
+
+  const target = iframeDocument.querySelector(store.classTarget) as HTMLElement;
 
   if (!target) {
     return;
